@@ -1,119 +1,25 @@
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import confusion_matrix, accuracy_score
+import sys
 
-import pandas as pd
+from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
 
-df = pd.read_csv("titanic.csv")
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-print(df.groupby('Sex')['Survived'].mean())
-print(df.pivot_table(index='Survived', columns='Pclass',
+        self.setWindowTitle("My App")
 
-                     values='Age', aggfunc='mean'))
-df.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, inplace=True)
-print(df['Embarked'].value_counts())
+        button = QPushButton("Press Me!")
 
-df['Embarked'].fillna('S', inplace=True)
+        self.setFixedSize(QSize(400, 300))
 
-print(df.groupby('Pclass')['Age'].median())
-print(df.groupby('Pclass')['Age'].median())
-
-# Median age for classes
-age_1 = df[df['Pclass'] == 1]['Age'].median()
-
-age_2 = df[df['Pclass'] == 2]['Age'].median()
-
-age_3 = df[df['Pclass'] == 3]['Age'].median()
+        # Устанавливаем центральный виджет Window.
+        self.setCentralWidget(button)
 
 
-def fill_age(row):  # row – это Series конкретного пассажира
-    if pd.isnull(row['Age']):
-        if row['Pclass'] == 1:
-            return age_1
+app = QApplication(sys.argv)
 
-        if row['Pclass'] == 2:
-            return age_2
-        return age_3
-    return row['Age']
+window = MainWindow()
+window.show()
 
-
-df['Age'] = df.apply(fill_age, axis=1)
-
-
-def fill_sex(sex):
-    if sex == 'male':
-        return 1
-
-    return 0
-
-
-df['Sex'] = df['Sex'].apply(fill_sex)
-
-print(pd.get_dummies(df['Embarked']))
-
-df[list(pd.get_dummies(df['Embarked']).columns)] = pd.get_dummies(df['Embarked'])
-
-df.drop('Embarked', axis=1, inplace=True)
-
-
-# Исследования признака Alone
-
-def is_alone(row):
-    if row['SibSp'] + row['Parch'] == 0:
-        return 1
-
-    return 0
-
-
-df['Alone'] = df.apply(is_alone, axis=1)
-
-df.pivot_table(values='Age', columns='Alone',
-
-               index='Survived', aggfunc='count')
-
-x = df.drop('Survived', axis=1)  # Данные о пассажирах
-
-y = df['Survived']  # Целевая переменная
-
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25)
-
-sc = StandardScaler()
-
-x_train = sc.fit_transform(x_train)
-
-x_test = sc.transform(x_test)
-classifier = KNeighborsClassifier(n_neighbors = 3)
-classifier.fit(x_train, y_train)
-y_pred = classifier.predict(x_test)
-
-percent = accuracy_score(y_test, y_pred) * 100
-TP, TN, FP, FN = 0, 0, 0, 0
-
-for test, pred in zip(y_test, y_pred):
-
-    if test - pred == 0:
-
-        if test == 1:
-
-            TP += 1
-
-        else:
-
-            TN += 1
-
-    else:
-
-        if test == 1:
-
-            FN += 1
-
-        else:
-
-            FP += 1
-
-print('Верный прогноз: выжившие -', TP, 'погибшие -', TN)
-
-print('Ошибочный прогноз: выжившие -', FP, 'погибшие -', FN)
-
-print(confusion_matrix(y_test, y_pred))
+app.exec()
